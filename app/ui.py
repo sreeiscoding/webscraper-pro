@@ -33,7 +33,7 @@ from app.exporter import export_csv, export_excel
 from app.network import fetch_html
 from app.pagination import process_urls
 from app.storage import DEFAULT_DB_PATH, ProjectStore
-from app.theme import PALETTE, inject_theme
+from app.theme import PALETTE, inject_theme, nav_slug
 
 LOGGER = logging.getLogger(__name__)
 
@@ -348,11 +348,6 @@ def _request_navigation(section: str) -> None:
     st.session_state.nav_request = section
 
 
-def _nav_slug(section: str) -> str:
-    """Return a stable key fragment for a navigation destination."""
-    return section.lower().replace(" ", "_")
-
-
 def _render_topnav() -> str:
     """Render the top navigation and return the active section.
 
@@ -379,18 +374,20 @@ def _render_topnav() -> str:
                     unsafe_allow_html=True,
                 )
             with right:
+                # The extra room accounts for the navigation icon and the
+                # button padding, so the labels never wrap.
                 nav_columns = st.columns(
-                    [max(len(section) + 3, 8) for section in SECTIONS],
+                    [max(len(section) + 9, 12) for section in SECTIONS],
                     gap="small",
                 )
                 for column, section in zip(nav_columns, SECTIONS):
                     with column:
                         is_active = section == active
-                        container_key = "wsp_nav_active" if is_active else f"wsp_nav_{_nav_slug(section)}"
+                        container_key = "wsp_nav_active" if is_active else f"wsp_nav_{nav_slug(section)}"
                         with st.container(key=container_key):
                             st.button(
                                 section,
-                                key=f"nav_{_nav_slug(section)}",
+                                key=f"nav_{nav_slug(section)}",
                                 on_click=_request_navigation,
                                 args=(section,),
                                 use_container_width=True,
@@ -416,7 +413,7 @@ def _render_topnav() -> str:
                     for section in SECTIONS:
                         st.button(
                             section,
-                            key=f"navm_{_nav_slug(section)}",
+                            key=f"navm_{nav_slug(section)}",
                             on_click=_request_navigation,
                             args=(section,),
                             use_container_width=True,
@@ -430,25 +427,25 @@ def _render_topnav() -> str:
 # ---------------------------------------------------------------------------
 
 
-def _relative_path(path: Path) -> str:
-    """Return a path relative to the project root when possible."""
-    try:
-        return str(Path(path).resolve().relative_to(Path.cwd().resolve()))
-    except (ValueError, OSError):
-        return Path(path).name
-
-
 def _page_header(title: str, lead: str) -> None:
     """Render a consistent page title and supporting description."""
     st.markdown(f'<h1 class="wsp-page-title">{html.escape(title)}</h1>', unsafe_allow_html=True)
     st.markdown(f'<p class="wsp-page-lead">{html.escape(lead)}</p>', unsafe_allow_html=True)
 
 
-def _stat_cards(stats: list[tuple[str, str, str]]) -> None:
-    """Render a responsive grid of metric cards computed from real application state."""
+def _stat_cards(stats: list[tuple[str, str, str]], mono_labels: set[str] | None = None) -> None:
+    """Render a responsive grid of metric cards computed from real application state.
+
+    ``mono_labels`` names the cards whose value is a technical string such as a
+    file path, a version or a user agent, so that value is set in the
+    monospace face while the rest of the interface stays in the UI typeface.
+    """
+    technical = mono_labels or set()
     cards = []
     for label, value, hint in stats:
         value_class = "wsp-stat__value wsp-stat__value--long" if len(value) > 24 else "wsp-stat__value"
+        if label in technical:
+            value_class += " wsp-mono"
         cards.append(
             f"""
         <div class="wsp-stat">
@@ -1130,11 +1127,12 @@ def _render_settings() -> None:
         )
         _stat_cards(
             [
-                ("Application", SETTINGS.app_name, "Displayed in the sidebar and page title"),
+                ("Application", SETTINGS.app_name, "Displayed in the brand and page title"),
                 ("Default timeout", f"{SETTINGS.default_timeout}s", "Applied when no override is set"),
                 ("Default user agent", SETTINGS.default_user_agent, "Sent with every request"),
                 ("Export directory", SETTINGS.export_directory, "Relative to the project root"),
-            ]
+            ],
+            mono_labels={"Default user agent"},
         )
 
         st.markdown(
@@ -1174,7 +1172,8 @@ def _render_settings() -> None:
                 ("Streamlit", streamlit_version, "Interface framework"),
                 ("Platform", platform.system(), platform.release()),
                 ("Working directory", str(Path.cwd()), "Project root"),
-            ]
+            ],
+            mono_labels={"Python", "Streamlit", "Working directory"},
         )
 
         st.markdown(
@@ -1190,7 +1189,8 @@ def _render_settings() -> None:
                     str(DEFAULT_DB_PATH.parent.parent / "exports"),
                     "Generated CSV and Excel workbooks",
                 ),
-            ]
+            ],
+            mono_labels={"Project database", "Export folder"},
         )
 
     st.markdown("<div style='height:1.4rem'></div>", unsafe_allow_html=True)

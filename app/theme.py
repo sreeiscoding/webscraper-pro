@@ -83,6 +83,11 @@ NAV_ICONS = {
 }
 
 
+def nav_slug(section: str) -> str:
+    """Return the stable key fragment used for a navigation destination."""
+    return section.lower().replace(" ", "_")
+
+
 def _icon_mask(name: str) -> str:
     """Return a CSS mask value for a bundled inline SVG icon."""
     svg = _ICON_SVG[name].replace('"', "'").replace("<svg", "<svg width='16' height='16'")
@@ -90,26 +95,28 @@ def _icon_mask(name: str) -> str:
 
 
 def _nav_icon_rules(nav_sections: tuple[str, ...] | list[str]) -> str:
-    """Build the icon rules for the navigation radio.
+    """Build the icon rules for the top navigation buttons.
 
-    Streamlit renders radio options with the option index as the input value, so
-    the icons are attached by position within the navigation list.
+    Streamlit renders a keyed widget inside an element container that carries
+    the ``st-key-<key>`` class, so each navigation button is addressed by the
+    key it was created with rather than by its position in the bar.
     """
     rules = []
-    for index, label in enumerate(nav_sections):
+    for label in nav_sections:
         icon = NAV_ICONS.get(label)
         if icon is None:
             continue
         mask = _icon_mask(icon)
-        rules.append(
-            f"""
-[data-testid="stSidebar"] div[data-testid="stRadio"] label:has(input[value="{index}"]) div[data-testid="stMarkdownContainer"]::before {{
+        for prefix in ("nav", "navm"):
+            rules.append(
+                f"""
+[data-testid="stApp"] .st-key-{prefix}_{nav_slug(label)} button::before {{
     content: "";
     display: inline-block;
-    width: 16px;
-    height: 16px;
-    margin-right: 10px;
-    vertical-align: -3px;
+    width: 15px;
+    height: 15px;
+    margin-right: 8px;
+    vertical-align: -2px;
     background-color: currentColor;
     -webkit-mask-image: {mask};
     mask-image: {mask};
@@ -118,7 +125,7 @@ def _nav_icon_rules(nav_sections: tuple[str, ...] | list[str]) -> str:
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
 }}"""
-        )
+            )
     return "\n".join(rules)
 
 
@@ -170,9 +177,31 @@ html, body, [data-testid="stApp"] {{
     font-family: inherit;
 }}
 
+/* Streamlit's markdown container declares its own font-family, which
+   overrides the interface typeface for every markdown-rendered element
+   (headings, labels and the custom blocks below). Scoping the rules to the
+   app container raises specificity above Streamlit's own declarations, so
+   the override is reliable without resorting to !important. */
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] {{
+    font-family: var(--wsp-sans);
+}}
+
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] :is(
+    p, h1, h2, h3, h4, h5, h6, span, a, li, ul, ol, strong, em, div, label
+) {{
+    font-family: var(--wsp-sans);
+}}
+
+/* Technical values and code keep the mono face. The extra scope puts this
+   rule above the markdown override above. */
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-mono,
 [data-testid="stApp"] code,
-[data-testid="stApp"] pre,
-.wsp-mono {{
+[data-testid="stApp"] pre {{
+    font-family: var(--wsp-mono);
+}}
+
+/* CSS selectors are technical values, so they are set in the mono face. */
+[data-testid="stApp"] [class*="st-key-selector_"] input {{
     font-family: var(--wsp-mono);
 }}
 
@@ -280,6 +309,7 @@ html, body, [data-testid="stApp"] {{
     padding: 0.4rem 0.85rem;
     border-radius: 8px;
     min-height: 2.35rem;
+    white-space: nowrap;
     transition: background-color 130ms ease, color 130ms ease, border-color 130ms ease;
 }}
 
@@ -365,7 +395,9 @@ html, body, [data-testid="stApp"] {{
     margin-bottom: 1.4rem;
 }}
 
-.wsp-hero__title {{
+/* The hero headline is the only serif element, so it re-asserts the serif
+   face with a specificity above the markdown override above. */
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-hero__title {{
     font-family: var(--wsp-serif);
     font-size: clamp(2.35rem, 5.4vw, 4.35rem);
     line-height: 1.05;
@@ -490,10 +522,6 @@ html, body, [data-testid="stApp"] {{
 
 .wsp-card > div > div > div > [data-testid="stMarkdownContainer"] p:first-child {{
     margin-top: 0;
-}}
-
-.wsp-card--flush {{
-    padding: 0.75rem 0.9rem;
 }}
 
 .wsp-stat-grid {{
@@ -668,11 +696,6 @@ html, body, [data-testid="stApp"] {{
 [data-testid="stDownloadButton"] button:hover {{
     background: var(--wsp-accent-hover);
     border-color: var(--wsp-accent-hover);
-}}
-
-.wsp-table-scroll {{
-    overflow-x: auto;
-    max-width: 100%;
 }}
 
 /* ---------------------------- Responsive -------------------------- */
