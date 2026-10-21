@@ -1,9 +1,10 @@
 """Centralised visual design system for the WebScraper Pro interface.
 
 The palette, spacing scale and stylesheet live here so that every screen shares
-one design language and the rules are not duplicated across rendering modules.
-No external assets or web fonts are required: icons are inline SVG masks and the
-font stack resolves to fonts already present on the machine.
+one visual language and the rules are not duplicated across rendering modules.
+The palette is a restrained near-black scheme with a single teal accent; the
+type stacks resolve to fonts already present on the machine, so the interface
+stays readable when the webfonts cannot be fetched.
 """
 
 from __future__ import annotations
@@ -12,20 +13,19 @@ import streamlit as st
 
 
 PALETTE = {
-    "background": "#080A0C",
-    "charcoal": "#121719",
-    "elevated": "#191F22",
-    "workspace": "#F5F7F8",
-    "card": "#FFFFFF",
-    "text": "#172126",
-    "text_on_dark": "#F5F7F8",
-    "text_muted": "#A6B0B5",
+    "background": "#08090A",
+    "charcoal": "#0E1011",
+    "elevated": "#141618",
+    "workspace": "#08090A",
+    "card": "#0E1011",
+    "text": "#F5F5F5",
+    "text_on_dark": "#F5F5F5",
+    "text_muted": "#92949A",
     "accent": "#14807A",
-    "accent_hover": "#106B66",
-    "accent_soft": "#E6F1F0",
-    "dark_border": "#293236",
-    "border": "#E1E7E9",
-    "gold": "#C5A46D",
+    "accent_hover": "#1B9189",
+    "accent_soft": "#0F2321",
+    "dark_border": "#242528",
+    "border": "#242528",
     "success": "#21865B",
     "error": "#C64747",
     "warning": "#B07C2E",
@@ -44,43 +44,14 @@ FONT_IMPORT = (
     "family=Instrument+Serif:ital@0;1&display=swap"
 )
 
-_ICON_SVG = {
-    "overview": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-        'stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-        '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/>'
-        '<rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>'
-    ),
-    "extraction": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-        'stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-        '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>'
-    ),
-    "results": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-        'stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-        '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>'
-    ),
-    "history": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-        'stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-        '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>'
-    ),
-    "settings": (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
-        'stroke="black" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
-        '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.6 1.6 0 008 19.4a1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H2a2 2 0 110-4h.1A1.6 1.6 0 003.6 8a1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H8a1.6 1.6 0 001-1.5V2a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V8a1.6 1.6 0 001.5 1H22a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg>'
-    ),
-}
+
+def nav_slug(section: str) -> str:
+    """Return the stable key fragment used for a navigation destination."""
+    return section.lower().replace(" ", "_")
 
 
-NAV_ICONS = {
-    "Overview": "overview",
-    "New Extraction": "extraction",
-    "Results": "results",
-    "History": "history",
-    "Settings": "settings",
-}
+
+
 
 
 def nav_slug(section: str) -> str:
@@ -88,45 +59,6 @@ def nav_slug(section: str) -> str:
     return section.lower().replace(" ", "_")
 
 
-def _icon_mask(name: str) -> str:
-    """Return a CSS mask value for a bundled inline SVG icon."""
-    svg = _ICON_SVG[name].replace('"', "'").replace("<svg", "<svg width='16' height='16'")
-    return f"url(\"data:image/svg+xml,{svg}\")"
-
-
-def _nav_icon_rules(nav_sections: tuple[str, ...] | list[str]) -> str:
-    """Build the icon rules for the top navigation buttons.
-
-    Streamlit renders a keyed widget inside an element container that carries
-    the ``st-key-<key>`` class, so each navigation button is addressed by the
-    key it was created with rather than by its position in the bar.
-    """
-    rules = []
-    for label in nav_sections:
-        icon = NAV_ICONS.get(label)
-        if icon is None:
-            continue
-        mask = _icon_mask(icon)
-        for prefix in ("nav", "navm"):
-            rules.append(
-                f"""
-[data-testid="stApp"] .st-key-{prefix}_{nav_slug(label)} button::before {{
-    content: "";
-    display: inline-block;
-    width: 15px;
-    height: 15px;
-    margin-right: 8px;
-    vertical-align: -2px;
-    background-color: currentColor;
-    -webkit-mask-image: {mask};
-    mask-image: {mask};
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-}}"""
-            )
-    return "\n".join(rules)
 
 
 THEME_CSS = f"""
@@ -152,7 +84,6 @@ THEME_CSS = f"""
     --wsp-accent-soft: {PALETTE['accent_soft']};
     --wsp-dark-border: {PALETTE['dark_border']};
     --wsp-border: {PALETTE['border']};
-    --wsp-gold: {PALETTE['gold']};
     --wsp-success: {PALETTE['success']};
     --wsp-error: {PALETTE['error']};
     --wsp-warning: {PALETTE['warning']};
@@ -161,7 +92,7 @@ THEME_CSS = f"""
     --wsp-serif: {FONT_STACKS['serif']};
     --wsp-mono: {FONT_STACKS['mono']};
     --wsp-radius: 10px;
-    --wsp-shadow: 0 1px 2px rgba(23, 33, 38, 0.04), 0 8px 24px rgba(23, 33, 38, 0.05);
+    --wsp-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
 }}
 
 html, body, [data-testid="stApp"] {{
@@ -210,17 +141,17 @@ html, body, [data-testid="stApp"] {{
     padding-bottom: 3rem;
     padding-left: var(--wsp-gutter);
     padding-right: var(--wsp-gutter);
-    max-width: 1600px;
+    max-width: 1180px;
 }}
 
 [data-testid="stHeader"] {{
     background: transparent;
 }}
 
-/* Streamlit's default gradient bar is replaced with a restrained accent line. */
+/* Streamlit's default gradient bar is reduced to a single hairline. */
 [data-testid="stDecoration"] {{
-    background: linear-gradient(90deg, var(--wsp-accent) 0%, var(--wsp-gold) 100%);
-    height: 2px;
+    background: var(--wsp-border);
+    height: 1px;
 }}
 
 /* Columns must be allowed to shrink so wide tables scroll inside their
@@ -237,14 +168,15 @@ html, body, [data-testid="stApp"] {{
 
 .st-key-wsp_topnav {{
     background: var(--wsp-background);
-    border: 1px solid var(--wsp-dark-border);
-    border-radius: 12px;
+    border: none;
+    border-bottom: 1px solid var(--wsp-border);
+    border-radius: 0;
     margin-left: calc(-1 * var(--wsp-gutter));
     margin-right: calc(-1 * var(--wsp-gutter));
-    padding: 0.7rem var(--wsp-gutter);
-    margin-bottom: 1.1rem;
+    padding: 1.05rem var(--wsp-gutter) 0.9rem;
+    margin-bottom: 3.4rem;
     position: sticky;
-    top: 0.5rem;
+    top: 0;
     z-index: 20;
 }}
 
@@ -252,6 +184,7 @@ html, body, [data-testid="stApp"] {{
     justify-content: space-between;
     align-items: center;
     flex-wrap: nowrap;
+    gap: 1.5rem;
 }}
 
 .st-key-wsp_topnav [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {{
@@ -265,71 +198,64 @@ html, body, [data-testid="stApp"] {{
 .wsp-brand {{
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }}
 
 .wsp-brand__mark {{
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    border-radius: 6px;
     background: var(--wsp-accent);
-    border: 1px solid rgba(197, 164, 109, 0.45);
     color: #FFFFFF;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     display: flex;
     align-items: center;
     justify-content: center;
 }}
 
 .wsp-brand__name {{
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: var(--wsp-text-on-dark);
+    color: var(--wsp-text);
     line-height: 1.2;
     letter-spacing: -0.01em;
 }}
 
-.wsp-brand__tag {{
-    font-size: 0.66rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--wsp-gold);
-    margin-top: 3px;
-}}
-
+/* Navigation reads as plain text links rather than buttons. */
 .st-key-wsp_topnav [data-testid="stButton"] button {{
     background: transparent;
-    border: 1px solid transparent;
+    border: none;
     color: var(--wsp-muted);
     font-size: 0.9rem;
     font-weight: 500;
-    padding: 0.4rem 0.85rem;
-    border-radius: 8px;
-    min-height: 2.35rem;
+    padding: 0.3rem 0.1rem;
+    border-radius: 0;
+    min-height: auto;
     white-space: nowrap;
-    transition: background-color 130ms ease, color 130ms ease, border-color 130ms ease;
+    transition: color 130ms ease, box-shadow 130ms ease;
 }}
 
 .st-key-wsp_topnav [data-testid="stButton"] button:hover {{
-    background: rgba(245, 247, 248, 0.06);
-    color: var(--wsp-text-on-dark);
+    background: transparent;
+    color: var(--wsp-text);
 }}
 
 .st-key-wsp_topnav [data-testid="stButton"] button:focus-visible {{
     outline: 2px solid var(--wsp-accent);
-    outline-offset: 2px;
+    outline-offset: 3px;
 }}
 
-/* The active destination is marked with a quiet teal highlight. */
+/* The active destination is marked with a single hairline underline. */
 .st-key-wsp_topnav .st-key-wsp_nav_active [data-testid="stButton"] button,
 .st-key-wsp_topnav .st-key-wsp_nav_active button {{
-    background: rgba(20, 128, 122, 0.16);
-    border-color: rgba(20, 128, 122, 0.55);
-    color: var(--wsp-text-on-dark);
+    background: transparent;
+    border: none;
+    color: var(--wsp-text);
     font-weight: 600;
+    box-shadow: inset 0 -1px 0 var(--wsp-accent);
 }}
 
 .st-key-wsp_topnav_mobile {{
@@ -346,7 +272,7 @@ html, body, [data-testid="stApp"] {{
     }}
 
     .st-key-wsp_topnav {{
-        border-radius: 10px;
+        margin-bottom: 2.2rem;
     }}
 }}
 
@@ -354,120 +280,265 @@ html, body, [data-testid="stApp"] {{
 
 .st-key-wsp_hero {{
     position: relative;
-    isolation: isolate;
-    background-color: var(--wsp-background);
-    background-image: radial-gradient(rgba(245, 247, 248, 0.05) 1px, transparent 1px);
-    background-size: 24px 24px;
-    border: 1px solid var(--wsp-dark-border);
-    border-radius: 14px;
-    margin-left: calc(-1 * var(--wsp-gutter));
-    margin-right: calc(-1 * var(--wsp-gutter));
-    padding: 4.4rem 3.4rem 4.6rem;
-    margin-bottom: 1.6rem;
-    overflow: hidden;
+    padding-top: 0.6rem;
+    margin-bottom: 2.6rem;
 }}
 
-.st-key-wsp_hero::before {{
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: radial-gradient(65% 90% at 12% 0%, rgba(20, 128, 122, 0.20), transparent 62%);
-    pointer-events: none;
-}}
-
-.st-key-wsp_hero::after {{
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: radial-gradient(50% 60% at 92% 100%, rgba(197, 164, 109, 0.10), transparent 60%);
-    pointer-events: none;
+/* The hero copy must be able to shrink inside the content container, which
+   keeps the supporting paragraph from overflowing on narrow screens. */
+.st-key-wsp_hero [data-testid="stMarkdownContainer"] {{
+    min-width: 0;
 }}
 
 .wsp-hero__eyebrow {{
     display: inline-block;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: var(--wsp-gold);
-    margin-bottom: 1.4rem;
-}}
-
-/* The hero headline is the only serif element, so it re-asserts the serif
-   face with a specificity above the markdown override above. */
-[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-hero__title {{
-    font-family: var(--wsp-serif);
-    font-size: clamp(2.35rem, 5.4vw, 4.35rem);
-    line-height: 1.05;
-    font-weight: 400;
-    letter-spacing: -0.012em;
-    color: var(--wsp-text-on-dark);
+    color: var(--wsp-muted);
     margin: 0 0 1.5rem;
-    max-width: 18ch;
 }}
 
-.wsp-hero__title em {{
-    font-style: italic;
-    color: #5CC7C0;
+/* The headline is the interface typeface at display size. The scope keeps it
+   above the markdown override that forces the UI face on other elements. */
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-hero__title {{
+    font-family: var(--wsp-sans);
+    font-size: clamp(2.5rem, 6vw, 4.9rem);
+    line-height: 1.04;
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    color: var(--wsp-text);
+    margin: 0 0 1.5rem;
+    max-width: 17ch;
 }}
 
 .wsp-hero__lead {{
     font-family: var(--wsp-sans);
-    font-size: 1.05rem;
-    line-height: 1.7;
+    font-size: 1.06rem;
+    line-height: 1.65;
     color: var(--wsp-muted);
-    margin: 0 0 2.3rem;
-    max-width: 52ch;
+    margin: 0 0 2.1rem;
+    max-width: 54ch;
 }}
 
-.wsp-hero__actions {{
-    display: flex;
+/* The two calls to action sit together under the supporting copy. */
+.st-key-wsp_hero_ctas {{
+    margin-bottom: 3.4rem;
+}}
+
+.st-key-wsp_hero_ctas [data-testid="stHorizontalBlock"] {{
+    gap: 1.6rem;
     flex-wrap: wrap;
-    gap: 0.8rem;
+    align-items: center;
 }}
 
-.wsp-hero__actions [data-testid="stButton"] {{
+.st-key-wsp_hero_ctas [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {{
+    flex: 0 0 auto;
     width: auto;
 }}
 
-.wsp-hero__actions [data-testid="stButton"] button {{
+.st-key-wsp_hero_ctas [data-testid="stButton"] {{
+    width: auto;
+}}
+
+.st-key-wsp_hero_ctas [data-testid="stButton"] button {{
     border-radius: 8px;
     font-family: var(--wsp-sans);
     font-size: 0.95rem;
     font-weight: 500;
-    padding: 0.75rem 1.5rem;
+    padding: 0.72rem 1.5rem;
     min-height: 3rem;
     border: 1px solid transparent;
-    transition: background-color 130ms ease, border-color 130ms ease;
+    transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease;
 }}
 
-.wsp-hero__actions [data-testid="stButton"] button[kind="primary"] {{
-    background: var(--wsp-accent);
-    border-color: var(--wsp-accent);
-    color: #FFFFFF;
+/* The primary action is a light surface with dark text. */
+.st-key-wsp_hero_ctas [data-testid="stButton"] button[kind="primary"] {{
+    background: #EDEDED;
+    border-color: #EDEDED;
+    color: #101113;
+    font-weight: 600;
 }}
 
-.wsp-hero__actions [data-testid="stButton"] button[kind="primary"]:hover {{
-    background: var(--wsp-accent-hover);
-    border-color: var(--wsp-accent-hover);
+.st-key-wsp_hero_ctas [data-testid="stButton"] button[kind="primary"]:hover {{
+    background: #FFFFFF;
+    border-color: #FFFFFF;
+    color: #101113;
 }}
 
-.wsp-hero__actions [data-testid="stButton"] button[kind="secondary"] {{
+/* The secondary action reads as a plain text link. */
+.st-key-wsp_hero_ctas [data-testid="stButton"] button[kind="secondary"] {{
     background: transparent;
-    border-color: var(--wsp-dark-border);
-    color: var(--wsp-text-on-dark);
+    border-color: transparent;
+    color: var(--wsp-muted);
+    padding-left: 0;
+    padding-right: 0;
+    min-height: auto;
+    box-shadow: none;
 }}
 
-.wsp-hero__actions [data-testid="stButton"] button[kind="secondary"]:hover {{
-    border-color: var(--wsp-gold);
-    background: rgba(245, 247, 248, 0.04);
+.st-key-wsp_hero_ctas [data-testid="stButton"] button[kind="secondary"]:hover {{
+    background: transparent;
+    border-color: transparent;
+    color: var(--wsp-text);
 }}
 
-.wsp-hero__actions [data-testid="stButton"] button:focus-visible {{
-    outline: 2px solid var(--wsp-gold);
-    outline-offset: 2px;
+.st-key-wsp_hero_ctas [data-testid="stButton"] button:focus-visible {{
+    outline: 2px solid var(--wsp-accent);
+    outline-offset: 3px;
+}}
+
+/* ---------------------- Product interface visual ------------------ */
+
+.wsp-visual {{
+    border: 1px solid var(--wsp-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--wsp-charcoal);
+    box-shadow: var(--wsp-shadow);
+}}
+
+.wsp-visual__bar {{
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.95rem;
+    border-bottom: 1px solid var(--wsp-border);
+    background: rgba(255, 255, 255, 0.014);
+}}
+
+.wsp-visual__url {{
+    font-family: var(--wsp-mono);
+    font-size: 0.72rem;
+    color: var(--wsp-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}}
+
+.wsp-visual__badge {{
+    margin-left: auto;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--wsp-muted);
+    border: 1px solid var(--wsp-border);
+    border-radius: 999px;
+    padding: 2px 9px;
+}}
+
+.wsp-visual__dot {{
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--wsp-accent);
+    display: block;
+}}
+
+.wsp-visual__body {{
+    display: grid;
+    grid-template-columns: 216px minmax(0, 1fr);
+}}
+
+.wsp-visual__rail {{
+    border-right: 1px solid var(--wsp-border);
+    padding: 0.95rem 1rem;
+    min-width: 0;
+}}
+
+.wsp-visual__rail-title {{
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--wsp-muted);
+    margin: 0 0 0.45rem;
+}}
+
+.wsp-visual__rail-title + .wsp-visual__rail-title {{
+    margin-top: 1.1rem;
+}}
+
+.wsp-visual__rail-value {{
+    font-family: var(--wsp-mono);
+    font-size: 0.72rem;
+    color: var(--wsp-text);
+    word-break: break-all;
+    line-height: 1.5;
+}}
+
+.wsp-visual__rail-value--muted {{
+    color: var(--wsp-muted);
+}}
+
+.wsp-visual__main {{
+    min-width: 0;
+}}
+
+.wsp-visual__scroll {{
+    overflow-x: auto;
+    max-width: 100%;
+}}
+
+.wsp-visual table {{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}}
+
+.wsp-visual th {{
+    text-align: left;
+    font-size: 0.64rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--wsp-muted);
+    font-weight: 600;
+    padding: 0.62rem 0.85rem;
+    border-bottom: 1px solid var(--wsp-border);
+    white-space: nowrap;
+}}
+
+.wsp-visual td {{
+    padding: 0.58rem 0.85rem;
+    color: var(--wsp-text);
+    border-bottom: 1px solid rgba(36, 37, 40, 0.8);
+    white-space: nowrap;
+}}
+
+.wsp-visual tr:last-child td {{
+    border-bottom: none;
+}}
+
+.wsp-visual td.wsp-visual__mono {{
+    font-family: var(--wsp-mono);
+    font-size: 0.74rem;
+    color: var(--wsp-muted);
+}}
+
+.wsp-visual__foot {{
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.3rem;
+    padding: 0.62rem 0.95rem;
+    border-top: 1px solid var(--wsp-border);
+    background: rgba(255, 255, 255, 0.012);
+}}
+
+.wsp-visual__meta {{
+    font-family: var(--wsp-mono);
+    font-size: 0.68rem;
+    color: var(--wsp-muted);
+}}
+
+.wsp-visual__meta b {{
+    color: var(--wsp-text);
+    font-weight: 500;
 }}
 
 /* --------------------------- Typography -------------------------- */
@@ -603,8 +674,8 @@ html, body, [data-testid="stApp"] {{
 }}
 
 [data-testid="stForm"] [data-testid="stFormSubmitButton"] button[kind="secondary"] {{
-    background: #FFFFFF;
-    border-color: #C9D5D9;
+    background: transparent;
+    border-color: var(--wsp-border);
     color: var(--wsp-text);
 }}
 
@@ -618,8 +689,9 @@ html, body, [data-testid="stApp"] {{
 [data-testid="stSelectbox"] div[data-baseweb="select"] > div,
 [data-testid="stTextArea"] textarea {{
     border-radius: 8px;
-    border-color: #D3DDE0;
+    border-color: #2A2C2F;
     color: var(--wsp-text);
+    background: var(--wsp-elevated);
 }}
 
 [data-testid="stTextInput"] input:focus,
@@ -631,13 +703,13 @@ html, body, [data-testid="stApp"] {{
 
 [data-testid="stTextInput"] input::placeholder,
 [data-testid="stTextArea"] textarea::placeholder {{
-    color: #A7B4B9;
+    color: #6B7075;
 }}
 
 [data-testid="stExpander"] {{
     border: 1px solid var(--wsp-border);
     border-radius: var(--wsp-radius);
-    background: #FBFCFC;
+    background: #0B0C0D;
 }}
 
 [data-testid="stExpander"] summary {{
@@ -701,10 +773,6 @@ html, body, [data-testid="stApp"] {{
 /* ---------------------------- Responsive -------------------------- */
 
 @media (max-width: 1200px) {{
-    .st-key-wsp_hero {{
-        padding: 3.6rem 2.6rem 3.8rem;
-    }}
-
     .block-container, [data-testid="stMainBlockContainer"] {{
         padding-left: 1.5rem;
         padding-right: 1.5rem;
@@ -720,13 +788,8 @@ html, body, [data-testid="stApp"] {{
         position: static;
     }}
 
-    .st-key-wsp_hero {{
-        padding: 3rem 1.9rem 3.2rem;
-        border-radius: 12px;
-    }}
-
-    .wsp-hero__title {{
-        max-width: 20ch;
+    .wsp-visual__body {{
+        grid-template-columns: 180px minmax(0, 1fr);
     }}
 }}
 
@@ -736,49 +799,63 @@ html, body, [data-testid="stApp"] {{
     }}
 
     .block-container, [data-testid="stMainBlockContainer"] {{
-        padding-top: 1rem;
+        padding-top: 0.8rem;
         padding-left: 1rem;
         padding-right: 1rem;
     }}
 
     .st-key-wsp_hero {{
-        padding: 2.4rem 1.35rem 2.6rem;
-        border-radius: 10px;
-        margin-bottom: 1.1rem;
+        padding-top: 0.2rem;
+        margin-bottom: 1.8rem;
     }}
 
     .wsp-hero__eyebrow {{
-        margin-bottom: 1rem;
+        margin-bottom: 0.9rem;
         font-size: 0.64rem;
         letter-spacing: 0.14em;
     }}
 
     .wsp-hero__title {{
-        font-size: clamp(2rem, 10vw, 2.7rem);
-        line-height: 1.08;
-        margin-bottom: 1.1rem;
+        font-size: clamp(2rem, 9.5vw, 2.6rem);
+        line-height: 1.1;
+        margin-bottom: 1rem;
         max-width: 100%;
     }}
 
     .wsp-hero__lead {{
         font-size: 0.95rem;
         line-height: 1.6;
-        margin-bottom: 1.7rem;
+        margin-bottom: 1.6rem;
+        max-width: 100%;
     }}
 
-    .wsp-hero__actions {{
+    /* The calls to action stack on a narrow screen. */
+    .st-key-wsp_hero_ctas {{
+        margin-bottom: 2.4rem;
+    }}
+
+    .st-key-wsp_hero_ctas [data-testid="stHorizontalBlock"] {{
         flex-direction: column;
-        align-items: stretch;
-        gap: 0.7rem;
+        align-items: flex-start;
+        gap: 1rem;
     }}
 
-    .wsp-hero__actions [data-testid="stButton"] {{
-        width: 100%;
+    .st-key-wsp_hero_ctas [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {{
+        flex: 0 0 auto;
+        width: auto;
     }}
 
-    .wsp-hero__actions [data-testid="stButton"] button {{
-        width: 100%;
-        min-height: 3rem;
+    /* The configuration rail is dropped so the data table keeps the width. */
+    .wsp-visual__body {{
+        grid-template-columns: minmax(0, 1fr);
+    }}
+
+    .wsp-visual__rail {{
+        display: none;
+    }}
+
+    .wsp-visual__foot {{
+        gap: 0.9rem;
     }}
 
     .wsp-page-title {{
@@ -795,6 +872,14 @@ html, body, [data-testid="stApp"] {{
         flex: 1 1 100% !important;
         width: 100% !important;
         min-width: 100%;
+    }}
+
+    /* The navigation keeps its own single row: the brand on the left and the
+       menu trigger on the right. */
+    .st-key-wsp_topnav [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {{
+        flex: 0 1 auto !important;
+        width: auto !important;
+        min-width: 0;
     }}
 
     /* The field column headers do not apply once the columns stack. */
@@ -829,9 +914,9 @@ html, body, [data-testid="stApp"] {{
 """
 
 
-def inject_theme(nav_sections: tuple[str, ...] | list[str] = ()) -> None:
+def inject_theme() -> None:
     """Apply the design system stylesheet to the running Streamlit app."""
     st.markdown(
-        f"<style>{THEME_CSS}{_nav_icon_rules(nav_sections)}</style>",
+        f"<style>{THEME_CSS}</style>",
         unsafe_allow_html=True,
     )

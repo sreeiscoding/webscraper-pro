@@ -63,6 +63,34 @@ _ADVANCED_WIDGET_KEYS = (
 
 
 
+_SAMPLE_VISUAL_ROWS = [
+    {
+        "title": "A Light in the Attic",
+        "price": "£51.77",
+        "availability": "In stock",
+        "product_url": "https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html",
+    },
+    {
+        "title": "Tipping the Velvet",
+        "price": "£53.74",
+        "availability": "In stock",
+        "product_url": "https://books.toscrape.com/catalogue/tipping-the-velvet_999/index.html",
+    },
+    {
+        "title": "Sister Boniface Mysteries",
+        "price": "£55.33",
+        "availability": "Out of stock",
+        "product_url": "https://books.toscrape.com/catalogue/sister-boniface-mysteries_997/index.html",
+    },
+    {
+        "title": "The Darkest Evening",
+        "price": "£47.82",
+        "availability": "In stock",
+        "product_url": "https://books.toscrape.com/catalogue/the-darkest-evening_996/index.html",
+    },
+]
+
+
 def _preset_options() -> list[str]:
     return list(_PRESETS.keys())
 
@@ -365,20 +393,15 @@ def _render_topnav() -> str:
                     """
                     <div class="wsp-brand">
                       <div class="wsp-brand__mark">WS</div>
-                      <div>
-                        <div class="wsp-brand__name">WebScraper Pro</div>
-                        <div class="wsp-brand__tag">Extraction Suite</div>
-                      </div>
+                      <div class="wsp-brand__name">WebScraper Pro</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
             with right:
-                # The extra room accounts for the navigation icon and the
-                # button padding, so the labels never wrap.
                 nav_columns = st.columns(
-                    [max(len(section) + 9, 12) for section in SECTIONS],
-                    gap="small",
+                    [max(len(section) + 2, 8) for section in SECTIONS],
+                    gap="medium",
                 )
                 for column, section in zip(nav_columns, SECTIONS):
                     with column:
@@ -400,10 +423,7 @@ def _render_topnav() -> str:
                     """
                     <div class="wsp-brand">
                       <div class="wsp-brand__mark">WS</div>
-                      <div>
-                        <div class="wsp-brand__name">WebScraper Pro</div>
-                        <div class="wsp-brand__tag">Extraction Suite</div>
-                      </div>
+                      <div class="wsp-brand__name">WebScraper Pro</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -462,40 +482,130 @@ def _stat_cards(stats: list[tuple[str, str, str]], mono_labels: set[str] | None 
 # ---------------------------------------------------------------------------
 
 
+def _product_visual_html() -> str:
+    """Build the wide product-interface preview shown in the Overview hero.
+
+    The panel is populated from the results of the most recent extraction when
+    one is available, and otherwise from clearly labelled sample content. No
+    request is made and no result is ever presented as live when it is not.
+    """
+    last_result = st.session_state.get("last_result") or {}
+    records = last_result.get("records") or []
+    config = last_result.get("config")
+
+    if records:
+        rows = records[:6]
+        columns = [name for name in ("title", "price", "availability", "product_url") if name in rows[0]]
+        source_url = getattr(config, "base_url", "") or ""
+        field_count = len(getattr(config, "fields", {}) or {})
+        badge = "Latest run"
+        is_live = True
+    else:
+        rows = _SAMPLE_VISUAL_ROWS
+        columns = ["title", "price", "availability", "product_url"]
+        source_url = "https://books.toscrape.com/"
+        field_count = len(columns)
+        badge = "Sample data"
+        is_live = False
+
+    source_host = source_url.split("//", 1)[-1].split("/", 1)[0] if source_url else ""
+
+    headers = "".join(f"<th>{html.escape(_visual_column_label(name))}</th>" for name in columns)
+    body_rows = []
+    for record in rows:
+        cells = []
+        for name in columns:
+            value = _preview_value(record.get(name, ""), limit=52)
+            css_class = ' class="wsp-visual__mono"' if name in {"price", "product_url"} else ""
+            cells.append(f"<td{css_class}>{html.escape(value)}</td>")
+        body_rows.append(f"<tr>{''.join(cells)}</tr>")
+
+    field_list = ", ".join(columns) if not is_live else ", ".join(
+        _visual_column_label(name) for name in columns
+    )
+
+    if is_live:
+        meta = (
+            f'<span class="wsp-visual__meta">records <b>{last_result.get("total_records", len(rows))}</b></span>'
+            f'<span class="wsp-visual__meta">pages <b>{last_result.get("pages_processed", 0)}</b></span>'
+            f'<span class="wsp-visual__meta">fields <b>{field_count}</b></span>'
+        )
+    else:
+        meta = (
+            '<span class="wsp-visual__meta">sample content — run an extraction to populate this view</span>'
+            f'<span class="wsp-visual__meta">fields <b>{field_count}</b></span>'
+        )
+
+    return f"""
+<div class="wsp-visual">
+  <div class="wsp-visual__bar">
+    <span class="wsp-visual__url">{html.escape(source_url or "no source selected")}</span>
+    <span class="wsp-visual__badge"><span class="wsp-visual__dot"></span>{html.escape(badge)}</span>
+  </div>
+  <div class="wsp-visual__body">
+    <div class="wsp-visual__rail">
+      <div class="wsp-visual__rail-title">Source</div>
+      <div class="wsp-visual__rail-value">{html.escape(source_host or "—")}</div>
+      <div class="wsp-visual__rail-title">Fields</div>
+      <div class="wsp-visual__rail-value wsp-visual__rail-value--muted">{html.escape(field_list)}</div>
+      <div class="wsp-visual__rail-title">Export</div>
+      <div class="wsp-visual__rail-value wsp-visual__rail-value--muted">CSV · Excel</div>
+    </div>
+    <div class="wsp-visual__main">
+      <div class="wsp-visual__scroll">
+        <table>
+          <thead><tr>{headers}</tr></thead>
+          <tbody>{''.join(body_rows)}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="wsp-visual__foot">{meta}</div>
+</div>
+"""
+
+
+def _visual_column_label(name: str) -> str:
+    """Return a readable heading for an extracted field name."""
+    parts = str(name).split("_")
+    return " ".join(part.upper() if part.lower() == "url" else part.capitalize() for part in parts)
+
+
 def _render_hero() -> None:
-    """Render the immersive Overview hero with its calls to action."""
+    """Render the Overview hero with its calls to action and product preview."""
     with st.container(key="wsp_hero"):
         st.markdown(
-            '<div class="wsp-hero__eyebrow">Web data extraction workspace</div>',
+            '<div class="wsp-hero__eyebrow">Web data extraction, refined.</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<h2 class="wsp-hero__title">Turn the web into<br />structured data.</h2>',
+            '<h2 class="wsp-hero__title">Turn the web into structured data.</h2>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<p class="wsp-hero__lead">Extract, organise, and export valuable information from '
-            "websites into clean, usable datasets.</p>",
+            '<p class="wsp-hero__lead">Extract, organise, and export web data into clean '
+            "spreadsheets. Spend less time collecting information and more time using it.</p>",
             unsafe_allow_html=True,
         )
-        primary_col, secondary_col = st.columns([1, 1])
-        with primary_col:
-            st.button(
-                "Start an extraction \u2192",
-                type="primary",
-                use_container_width=True,
-                on_click=_request_navigation,
-                args=("New Extraction",),
-                key="hero_start_extraction",
-            )
-        with secondary_col:
-            st.button(
-                "View results",
-                use_container_width=True,
-                on_click=_request_navigation,
-                args=("Results",),
-                key="hero_view_results",
-            )
+        with st.container(key="wsp_hero_ctas"):
+            primary_col, secondary_col = st.columns([1, 1], gap="medium")
+            with primary_col:
+                st.button(
+                    "Start extracting",
+                    type="primary",
+                    on_click=_request_navigation,
+                    args=("New Extraction",),
+                    key="hero_start_extraction",
+                )
+            with secondary_col:
+                st.button(
+                    "Explore the results \u2192",
+                    on_click=_request_navigation,
+                    args=("Results",),
+                    key="hero_view_results",
+                )
+
+        st.markdown(_product_visual_html(), unsafe_allow_html=True)
 
 
 def _render_overview() -> None:
@@ -1205,7 +1315,7 @@ def _render_settings() -> None:
 def render_app() -> None:
     """Render the complete Streamlit workspace."""
     st.set_page_config(page_title=SETTINGS.app_name, page_icon="📊", layout="wide")
-    inject_theme(SECTIONS)
+    inject_theme()
 
     _init_session_state()
     section = _render_topnav()
