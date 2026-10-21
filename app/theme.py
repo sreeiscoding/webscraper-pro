@@ -32,16 +32,21 @@ PALETTE = {
 }
 
 FONT_STACKS = {
-    "sans": '"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif',
-    "serif": '"Instrument Serif", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif',
-    "mono": '"IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
+    # The interface typeface: a monospaced face that gives the product its
+    # precise, terminal-inspired identity.
+    "ui": '"Inconsolata", ui-monospace, "SFMono-Regular", Consolas, monospace',
+    # Dense tabular content (prices, counts, identifiers) uses the platform
+    # monospace so columns align and figures scan cleanly.
+    "mono": 'ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace',
+    # A restrained secondary face, used only where a button benefits from
+    # typographic contrast against the monospaced interface.
+    "accent": '"Noto Sans", sans-serif',
 }
 
 FONT_IMPORT = (
     "https://fonts.googleapis.com/css2?"
-    "family=IBM+Plex+Mono:wght@400;500&"
-    "family=IBM+Plex+Sans:wght@400;500;600&"
-    "family=Instrument+Serif:ital@0;1&display=swap"
+    "family=Inconsolata:wght@400;500;600;700&"
+    "family=Noto+Sans:wght@400;500;600&display=swap"
 )
 
 
@@ -51,14 +56,9 @@ def nav_slug(section: str) -> str:
 
 
 
-
-
-
 def nav_slug(section: str) -> str:
     """Return the stable key fragment used for a navigation destination."""
     return section.lower().replace(" ", "_")
-
-
 
 
 THEME_CSS = f"""
@@ -88,16 +88,16 @@ THEME_CSS = f"""
     --wsp-error: {PALETTE['error']};
     --wsp-warning: {PALETTE['warning']};
     --wsp-gutter: 2.2rem;
-    --wsp-sans: {FONT_STACKS['sans']};
-    --wsp-serif: {FONT_STACKS['serif']};
-    --wsp-mono: {FONT_STACKS['mono']};
+    --wsp-font-ui: {FONT_STACKS['ui']};
+    --wsp-font-mono: {FONT_STACKS['mono']};
+    --wsp-font-accent: {FONT_STACKS['accent']};
     --wsp-radius: 10px;
     --wsp-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
 }}
 
 html, body, [data-testid="stApp"] {{
     background: var(--wsp-workspace);
-    font-family: var(--wsp-sans);
+    font-family: var(--wsp-font-ui);
     font-size: 15px;
 }}
 
@@ -114,13 +114,13 @@ html, body, [data-testid="stApp"] {{
    app container raises specificity above Streamlit's own declarations, so
    the override is reliable without resorting to !important. */
 [data-testid="stApp"] [data-testid="stMarkdownContainer"] {{
-    font-family: var(--wsp-sans);
+    font-family: var(--wsp-font-ui);
 }}
 
 [data-testid="stApp"] [data-testid="stMarkdownContainer"] :is(
     p, h1, h2, h3, h4, h5, h6, span, a, li, ul, ol, strong, em, div, label
 ) {{
-    font-family: var(--wsp-sans);
+    font-family: var(--wsp-font-ui);
 }}
 
 /* Technical values and code keep the mono face. The extra scope puts this
@@ -128,12 +128,12 @@ html, body, [data-testid="stApp"] {{
 [data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-mono,
 [data-testid="stApp"] code,
 [data-testid="stApp"] pre {{
-    font-family: var(--wsp-mono);
+    font-family: var(--wsp-font-mono);
 }}
 
 /* CSS selectors are technical values, so they are set in the mono face. */
 [data-testid="stApp"] [class*="st-key-selector_"] input {{
-    font-family: var(--wsp-mono);
+    font-family: var(--wsp-font-mono);
 }}
 
 .block-container, [data-testid="stMainBlockContainer"] {{
@@ -303,7 +303,7 @@ html, body, [data-testid="stApp"] {{
 /* The headline is the interface typeface at display size. The scope keeps it
    above the markdown override that forces the UI face on other elements. */
 [data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-hero__title {{
-    font-family: var(--wsp-sans);
+    font-family: var(--wsp-font-ui);
     font-size: clamp(2.5rem, 6vw, 4.9rem);
     line-height: 1.04;
     font-weight: 600;
@@ -314,12 +314,14 @@ html, body, [data-testid="stApp"] {{
 }}
 
 .wsp-hero__lead {{
-    font-family: var(--wsp-sans);
+    font-family: var(--wsp-font-ui);
     font-size: 1.06rem;
     line-height: 1.65;
     color: var(--wsp-muted);
     margin: 0 0 2.1rem;
-    max-width: 54ch;
+    /* The monospaced face needs a slightly wider measure to keep the
+       supporting copy to two comfortable lines. */
+    max-width: 64ch;
 }}
 
 /* The two calls to action sit together under the supporting copy. */
@@ -344,12 +346,13 @@ html, body, [data-testid="stApp"] {{
 
 .st-key-wsp_hero_ctas [data-testid="stButton"] button {{
     border-radius: 8px;
-    font-family: var(--wsp-sans);
+    font-family: var(--wsp-font-ui);
     font-size: 0.95rem;
     font-weight: 500;
     padding: 0.72rem 1.5rem;
     min-height: 3rem;
     border: 1px solid transparent;
+    white-space: nowrap;
     transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease;
 }}
 
@@ -409,7 +412,6 @@ html, body, [data-testid="stApp"] {{
 }}
 
 .wsp-visual__url {{
-    font-family: var(--wsp-mono);
     font-size: 0.72rem;
     color: var(--wsp-muted);
     overflow: hidden;
@@ -465,10 +467,10 @@ html, body, [data-testid="stApp"] {{
 }}
 
 .wsp-visual__rail-value {{
-    font-family: var(--wsp-mono);
     font-size: 0.72rem;
     color: var(--wsp-text);
-    word-break: break-all;
+    word-break: normal;
+    overflow-wrap: anywhere;
     line-height: 1.5;
 }}
 
@@ -515,7 +517,7 @@ html, body, [data-testid="stApp"] {{
 }}
 
 .wsp-visual td.wsp-visual__mono {{
-    font-family: var(--wsp-mono);
+    font-family: var(--wsp-font-mono);
     font-size: 0.74rem;
     color: var(--wsp-muted);
 }}
@@ -531,7 +533,6 @@ html, body, [data-testid="stApp"] {{
 }}
 
 .wsp-visual__meta {{
-    font-family: var(--wsp-mono);
     font-size: 0.68rem;
     color: var(--wsp-muted);
 }}
@@ -578,6 +579,43 @@ html, body, [data-testid="stApp"] {{
     color: var(--wsp-muted);
     font-weight: 600;
     margin-bottom: 0.4rem;
+}}
+
+/* ------------------------- Typography accents ---------------------- */
+
+/* A restrained secondary face is reserved for the buttons that carry the
+   primary action. Everything else - navigation, links, labels, controls -
+   stays in the monospaced interface face. The label is styled as well as the
+   button itself, because Streamlit renders the label inside its own markdown
+   container, which would otherwise keep the interface face. */
+.st-key-wsp_hero_ctas [data-testid="stButton"] button[kind="primary"],
+[data-testid="stFormSubmitButton"] button[kind="primary"],
+[data-testid="stDownloadButton"] button {{
+    font-family: var(--wsp-font-accent);
+}}
+
+[data-testid="stApp"] .st-key-wsp_hero_ctas [data-testid="stButton"] button[kind="primary"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stApp"] [data-testid="stFormSubmitButton"] button[kind="primary"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stApp"] [data-testid="stDownloadButton"] button [data-testid="stMarkdownContainer"] p {{
+    font-family: var(--wsp-font-accent);
+}}
+
+/* The primary action keeps a stable width whether the webfont loads or the
+   fallback is used. */
+.st-key-wsp_hero_ctas [data-testid="stButton"] button[kind="primary"] {{
+    min-width: 9.5rem;
+}}
+
+/* Dense tabular content - prices, counts, identifiers and technical
+   metadata - uses the platform monospace so figures align and scan cleanly.
+   These rules carry the same extra scope as the interface override above, so
+   they win over it without !important. */
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-mono,
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-stat__value,
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-visual__url,
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-visual__rail-value,
+[data-testid="stApp"] [data-testid="stMarkdownContainer"] .wsp-visual__meta {{
+    font-family: var(--wsp-font-mono);
 }}
 
 /* ----------------------------- Cards ----------------------------- */
